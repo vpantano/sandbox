@@ -1,3 +1,5 @@
+import db from './db';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -23,6 +25,15 @@ export default async function handler(req, res) {
     }
 
     const authData = await authResponse.json();
+
+    res.setHeader('Set-Cookie', [
+      `token=${authData.token}; HttpOnly; Path=/`,
+      `user=${username}; Path=/`,
+      `loginTime=${new Date().toISOString()}; Path=/`,
+    ]);
+
+    db.query('INSERT INTO logins (username, login_time) VALUES (?, ?)', [username, new Date().toISOString()]);
+
     return res.status(200).json({ message: 'Login successful', data: authData });
   } catch (error) {
     return res.status(500).json({ message: 'Internal Server Error' });
